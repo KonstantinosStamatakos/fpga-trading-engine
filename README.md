@@ -101,32 +101,6 @@ All functional tests pass under Verilator simulation.
 
 ![Simulation Results](docs/simulation-results.png)
 
-### Simulation Results
-
-```text
-TEST 1: ADD BUY
-PASS TEST 1
-
-TEST 2: ADD SELL without match
-PASS TEST 2
-
-TEST 3: Crossing BUY
-PASS TEST 3
-
-TEST 4: CANCEL
-PASS TEST 4
-
-TEST 5: Price-time priority
-PASS TEST 5
-
-TEST 6: Partial fill
-PASS TEST 6
-
-TEST 7: End-to-end latency
-PASS TEST 7: End-to-end latency = 20 cycles
-
-ALL TRADING ENGINE TESTS PASSED
-```
 
 The measured end-to-end processing latency in the testbench is:
 
