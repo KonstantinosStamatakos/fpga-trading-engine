@@ -1,258 +1,137 @@
-# FPGA Low-Latency Trading Engine
+# FPGA Trading Engine
 
-A hardware-oriented trading engine implemented in SystemVerilog, designed to explore deterministic, low-latency order processing on FPGA architectures.
+A hardware-based electronic trading engine implemented in SystemVerilog, designed to explore low-latency order processing and FPGA architectures used in electronic trading systems.
 
-The system accepts encoded market messages, maintains a simplified limit order book, performs price-time-priority matching, supports order cancellation and partial fills, and produces trade execution outputs.
+The design accepts order messages, maintains a hardware order book, performs price-time-priority matching, supports order cancellation and partial fills, and produces trade events.
 
-The complete design was verified through SystemVerilog simulation and synthesized/implemented in AMD Vivado with a 100 MHz clock target.
-
----
-
-## Overview
-
-Electronic trading systems require extremely low and predictable processing latency. FPGAs are well suited to these workloads because market-data processing, order-book operations, and matching logic can be implemented directly in hardware.
-
-This project implements a simplified FPGA trading pipeline:
-
-```text
-                 Incoming Message
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Message Parser  │
-              └────────┬────────┘
-                       │
-                ADD / CANCEL
-                       │
-                       ▼
-              ┌─────────────────┐
-              │   Order Book    │
-              │                 │
-              │   BUY │ SELL    │
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Matching Logic  │
-              └────────┬────────┘
-                       │
-                       ▼
-                 Trade Output
-```
-
-The design focuses on hardware architecture, deterministic processing, pipelining, and timing optimization rather than implementing a full production exchange.
-
----
-
-## Features
-
-- SystemVerilog RTL implementation
-- Encoded market-message parsing
-- Limit order book
-- BUY and SELL order handling
-- Best bid / best ask tracking
-- Price-time priority
-- Crossing-order detection
-- Order cancellation
-- Partial fills
-- Trade execution output
-- Sequence-number based time priority
-- Pipelined order-book search
-- Self-checking SystemVerilog testbench
-- End-to-end latency measurement
-- FPGA synthesis and implementation in Vivado
-- 100 MHz timing target achieved
+The complete design was simulated with Verilator and synthesized and implemented in AMD Vivado for a Xilinx Artix-7 FPGA.
 
 ---
 
 ## Architecture
 
+The trading engine consists of three main RTL components:
+
 ### Message Parser
-
-`message_parser.sv` converts incoming encoded messages into internal trading-engine commands.
-
-The parser extracts information such as:
-
-- message type
-- order ID
-- side
-- price
-- quantity
-
-These signals are passed to the order-book logic for processing.
+Decodes incoming order messages and converts them into internal signals used by the trading engine.
 
 ### Order Book
+Maintains active BUY and SELL orders and implements:
 
-`order_book.sv` maintains active BUY and SELL orders.
+- Order insertion
+- Order cancellation
+- BUY/SELL matching
+- Price priority
+- Time priority
+- Partial fills
+- Best bid tracking
+- Best ask tracking
 
-Each order contains information including:
+### Trading Engine
+Integrates the message parser and order book into the complete processing pipeline.
 
 ```text
-valid
-side
-price
-quantity
-order_id
-sequence_number
+                Incoming Order Message
+                         │
+                         ▼
+                ┌────────────────┐
+                │ Message Parser │
+                └───────┬────────┘
+                        │
+                        ▼
+                ┌────────────────┐
+                │   Order Book   │
+                │                │
+                │ Price / Time   │
+                │   Priority     │
+                └───────┬────────┘
+                        │
+             ┌──────────┴──────────┐
+             ▼                     ▼
+       Market State            Trade Event
+     Best Bid / Ask        Price / Qty / IDs
 ```
 
-Sequence numbers preserve arrival ordering when multiple orders exist at the same price.
+---
 
-The book determines the highest-priority BUY and SELL orders according to:
+## Order Matching
 
-1. Price priority
-2. Time priority
+Orders are matched using **price-time priority**.
 
 For BUY orders, higher prices have priority.
 
 For SELL orders, lower prices have priority.
 
-Orders at the same price are prioritized by arrival sequence.
+When multiple orders exist at the same price, the oldest order is selected first.
 
-### Matching Engine
-
-A trade occurs when an incoming order crosses an existing order on the opposite side of the book.
-
-Example:
+A trade occurs when:
 
 ```text
-Best Ask: 10010
-
-Incoming BUY:
-Price:     10020
-Quantity:  20
+BUY price >= best SELL price
 ```
 
-Because:
+or:
 
 ```text
-10020 >= 10010
+SELL price <= best BUY price
 ```
 
-the orders cross and a trade is generated.
-
-The engine outputs information including:
-
-```text
-buy_order_id
-sell_order_id
-execution_price
-execution_quantity
-```
-
-Partial fills are supported when the quantities of the two orders differ.
-
----
-
-## Pipelined Order Search
-
-Finding the best order requires comparing multiple active entries.
-
-A large combinational comparison network creates a long FPGA critical path, so the search logic is pipelined across multiple comparison levels.
-
-Conceptually:
-
-```text
-Orders
-  │
-  ▼
-Pairwise comparisons
-  │
-  ▼
-Intermediate winners
-  │
-  ▼
-Higher-level comparisons
-  │
-  ▼
-Best Bid / Best Ask
-```
-
-This reduces the amount of combinational logic between registers and improves achievable clock frequency.
+The engine also supports partial fills when the quantities of the two orders are different.
 
 ---
 
 ## Verification
 
-The design includes a self-checking SystemVerilog testbench:
+A SystemVerilog testbench was developed to verify the complete trading engine.
 
-```text
-tb/trading_engine_tb.sv
-```
+The verification suite tests:
 
-The testbench verifies several important behaviors.
+1. BUY order insertion
+2. SELL order insertion without a match
+3. Crossing BUY order
+4. Order cancellation
+5. Price-time priority
+6. Partial fills
+7. End-to-end processing latency
 
-### Test 1 — Add BUY
+All tests pass successfully under Verilator simulation.
 
-Verifies that a BUY order is correctly inserted and becomes the best bid.
+![Simulation Results](docs/simulation-results.png)
 
-### Test 2 — Add SELL Without Match
+The measured end-to-end latency in the testbench is:
 
-Adds a SELL order above the current bid and verifies that no trade occurs.
-
-### Test 3 — Crossing BUY
-
-Sends a BUY order that crosses the best ask and verifies the generated trade.
-
-### Test 4 — Cancel
-
-Verifies removal of an existing order from the book.
-
-### Test 5 — Price-Time Priority
-
-Adds multiple orders at the same price and verifies that the earlier order receives execution priority.
-
-### Test 6 — Partial Fill
-
-Verifies correct quantity handling when only part of an order can be executed.
-
-### Test 7 — End-to-End Latency
-
-Measures the number of clock cycles between an input transaction and the resulting trade output.
-
-Simulation result:
-
-```text
-TEST 1: ADD BUY
-PASS TEST 1
-
-TEST 2: ADD SELL without match
-PASS TEST 2
-
-TEST 3: Crossing BUY
-PASS TEST 3
-
-TEST 4: CANCEL
-PASS TEST 4
-
-TEST 5: Price-time priority
-PASS TEST 5
-
-TEST 6: Partial fill
-PASS TEST 6
-
-TEST 7: End-to-end latency
-PASS TEST 7: End-to-end latency = 20 cycles
-
-====================================
-ALL TRADING ENGINE TESTS PASSED
-====================================
-```
+**20 clock cycles**
 
 ---
 
-## FPGA Timing
+## FPGA Implementation
 
-The design was synthesized and implemented in AMD Vivado targeting a 100 MHz clock:
+The design was synthesized and implemented in AMD Vivado targeting a Xilinx Artix-7 FPGA.
 
-```text
-Clock period: 10 ns
-Clock frequency: 100 MHz
-```
+### Timing
 
-After pipelining and timing optimization, the implemented design met the specified timing constraint.
+The implementation meets the specified **10 ns clock period (100 MHz)** timing constraint.
 
-The timing analysis reported no failing setup endpoints for the final implementation.
+- Worst Negative Slack (WNS): **0.000 ns**
+- Total Negative Slack (TNS): **0.000 ns**
+- Failing setup endpoints: **0**
+- Failing hold endpoints: **0**
+
+![Timing Closure](docs/timing-closure.png)
+
+---
+
+## Resource Utilization
+
+Post-implementation resource utilization:
+
+| Resource | Used | Available | Utilization |
+|----------|-----:|----------:|------------:|
+| LUT | 2615 | 20800 | 12.57% |
+| Flip-Flops | 1834 | 41600 | 4.41% |
+| I/O | 108 | 210 | 51.43% |
+
+![FPGA Utilization](docs/utilization.png)
 
 ---
 
@@ -260,37 +139,22 @@ The timing analysis reported no failing setup endpoints for the final implementa
 
 ```text
 fpga-trading-engine/
-│
 ├── rtl/
-│   ├── trading_pkg.sv
 │   ├── message_parser.sv
 │   ├── order_book.sv
-│   └── trading_engine.sv
+│   ├── trading_engine.sv
+│   └── trading_pkg.sv
 │
 ├── tb/
 │   └── trading_engine_tb.sv
 │
+├── docs/
+│   ├── simulation-results.png
+│   ├── timing-closure.png
+│   └── utilization.png
+│
 └── README.md
 ```
-
-### RTL Files
-
-**`trading_pkg.sv`**  
-Shared types and constants used throughout the trading engine.
-
-**`message_parser.sv`**  
-Decodes incoming market messages.
-
-**`order_book.sv`**  
-Stores orders, determines best bid/ask, performs matching, cancellation, and quantity updates.
-
-**`trading_engine.sv`**  
-Top-level module connecting the parser and order book.
-
-### Verification
-
-**`trading_engine_tb.sv`**  
-Self-checking SystemVerilog testbench covering order insertion, cancellation, matching, price-time priority, partial fills, and latency.
 
 ---
 
@@ -298,21 +162,34 @@ Self-checking SystemVerilog testbench covering order insertion, cancellation, ma
 
 - SystemVerilog
 - Verilator
-- GTKWave
 - AMD Vivado
+- GTKWave
+- Xilinx Artix-7
 
 ---
 
-## Design Goals
+## Key Results
 
-The main goals of the project were to explore:
+- Implemented a synthesizable FPGA trading engine in SystemVerilog
+- Implemented hardware order-book management
+- Implemented price-time-priority order matching
+- Supported cancellation and partial fills
+- Verified the complete design using a SystemVerilog testbench
+- Passed all functional verification tests
+- Achieved a measured end-to-end latency of 20 clock cycles
+- Achieved timing closure at a 100 MHz target clock
+- Used approximately 13% of available LUT resources and 4% of flip-flops on the target Artix-7 device
 
-- FPGA-based low-latency architectures
-- deterministic hardware processing
-- order-book implementation in RTL
-- price-time-priority matching
-- pipelined comparison networks
-- RTL verification
-- FPGA timing analysis and optimization
+---
 
-The project demonstrates the complete workflow from RTL architecture and functional verification through synthesis, implementation, and timing closure.
+## Future Work
+
+Potential extensions include:
+
+- Higher-throughput pipelined order processing
+- Multiple price levels
+- Larger order-book capacity
+- Market-data feed handling
+- Ethernet interface integration
+- Hardware risk checks
+- Performance optimization for higher clock frequencies
