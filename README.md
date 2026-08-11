@@ -154,35 +154,6 @@ The optimization process included:
 
 During optimization, the worst negative slack was reduced from several nanoseconds of timing violation to **0.000 ns**, with no remaining failing endpoints.
 
-This process provided practical experience with the complete FPGA performance-optimization workflow:
-
-```text
-RTL Design
-    │
-    ▼
-Functional Simulation
-    │
-    ▼
-Synthesis
-    │
-    ▼
-Place & Route
-    │
-    ▼
-Timing Analysis
-    │
-    ▼
-Critical Path Identification
-    │
-    ▼
-RTL / Implementation Optimization
-    │
-    ▼
-Re-implementation
-    │
-    ▼
-Timing Closure
-```
 
 ---
 
@@ -196,19 +167,6 @@ The final implementation meets the specified **10 ns clock period**, correspondi
 
 Final timing results:
 
-| Metric | Result |
-|---|---:|
-| Target frequency | 100 MHz |
-| Clock period | 10 ns |
-| Worst Negative Slack (WNS) | 0.000 ns |
-| Total Negative Slack (TNS) | 0.000 ns |
-| Failing setup endpoints | 0 |
-| Failing hold endpoints | 0 |
-
-Vivado reports:
-
-> All user specified timing constraints are met.
-
 ![Timing Closure](docs/timing-closure.png)
 
 ---
@@ -217,38 +175,9 @@ Vivado reports:
 
 Post-implementation resource utilization on the target Artix-7 device:
 
-| Resource | Used | Available | Utilization |
-|---|---:|---:|---:|
-| LUT | 2615 | 20800 | 12.57% |
-| Flip-Flops | 1834 | 41600 | 4.41% |
-| I/O | 108 | 210 | 51.43% |
-
 ![FPGA Utilization](docs/utilization.png)
 
 The core logic occupies approximately **13% of the available LUTs** and **4% of the available flip-flops** on the target device.
-
----
-
-## Project Structure
-
-```text
-fpga-trading-engine/
-├── rtl/
-│   ├── message_parser.sv
-│   ├── order_book.sv
-│   ├── trading_engine.sv
-│   └── trading_pkg.sv
-│
-├── tb/
-│   └── trading_engine_tb.sv
-│
-├── docs/
-│   ├── simulation-results.png
-│   ├── timing-closure.png
-│   └── utilization.png
-│
-└── README.md
-```
 
 ---
 
@@ -258,8 +187,7 @@ fpga-trading-engine/
 - **Verilator** — Functional simulation
 - **AMD Vivado** — Synthesis, implementation, timing analysis, and utilization analysis
 - **GTKWave** — Waveform inspection
-- **Xilinx Artix-7** — FPGA target architecture
-
+  
 ---
 
 ## Key Results
@@ -280,16 +208,4 @@ fpga-trading-engine/
 
 ---
 
-## Future Work
 
-Potential extensions include:
-
-- Increasing order-book depth
-- Supporting additional price levels
-- Increasing processing throughput through deeper pipelining
-- Optimizing the architecture for higher clock frequencies
-- Adding hardware pre-trade risk checks
-- Adding market-data feed processing
-- Integrating an Ethernet or high-speed network interface
-- Implementing more extensive randomized and constrained verification
-- Evaluating the architecture on higher-performance FPGA platforms
