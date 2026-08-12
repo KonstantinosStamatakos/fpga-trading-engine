@@ -2,9 +2,9 @@
 
 A low-latency trading engine built in SystemVerilog, targeting a Xilinx Artix-7 FPGA. I wanted to understand what actually happens inside the hardware that HFT firms use to match orders in nanoseconds — so I built one myself, from message parsing all the way down to timing closure.
 
-Everything runs entirely in synthesizable RTL: order parsing, order-book management, price-time-priority matching, cancellations, partial fills, and trade generation. No software in the loop.
+Everything runs entirely in synthesizable RTL: order parsing, order-book management, price-time-priority matching, cancellations, partial fills, and trade generation.
 
-I verified the design functionally with Verilator, then took it through synthesis, place, and route in AMD Vivado. Getting it to actually meet timing was its own project — the first pass missed the 100 MHz target by a good margin, and closing that gap meant digging into critical paths and restructuring the order-selection logic more than once.
+I verified the design functionally with Verilator, then took it through synthesis, place, and route in AMD Vivado. Getting it to actually meet timing was its own project. My first try missed the 100 MHz target by a good margin, and closing that gap meant digging into critical paths and restructuring the order-selection logic more than once.
 
 ---
 
@@ -20,28 +20,6 @@ This is where the real logic lives — insertion, cancellation, matching, price 
 
 ### Trading Engine
 Wires the parser and order book together into one processing pipeline.
-
-```text
-                Incoming Order Message
-                         │
-                         ▼
-                ┌────────────────┐
-                │ Message Parser │
-                └───────┬────────┘
-                        │
-                        ▼
-                ┌────────────────┐
-                │   Order Book   │
-                │                │
-                │ Price / Time   │
-                │   Priority     │
-                └───────┬────────┘
-                        │
-             ┌──────────┴──────────┐
-             ▼                     ▼
-       Market State            Trade Event
-     Best Bid / Ask        Price / Qty / IDs
-```
 
 ---
 
