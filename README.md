@@ -63,7 +63,7 @@ End-to-end latency measured in the testbench: **20 clock cycles**.
 
 ## Timing Optimization
 
-Once the logic worked, I moved into Vivado with a 100 MHz target (10 ns period) — and immediately blew past it. The timing reports pointed to the order-book selection logic as the culprit: the comparison and priority chains were long combinational paths with a lot of fanout, and that was dragging the whole design down.
+Once the logic worked, I moved into Vivado with a 100 MHz target (10 ns period), but the first pass didn't meet timing. The reports pointed to the order-book selection logic as the bottleneck — the comparison and priority chains formed long combinational paths with heavy loaded signals which was the main thing holding the design back.
 
 From there it was a lot of back-and-forth:
 
@@ -75,7 +75,7 @@ From there it was a lot of back-and-forth:
 - Trying different Vivado implementation strategies to see what placement/routing helped
 - Repeating all of the above until the numbers actually closed
 
-Worst negative slack went from several nanoseconds in the red to a clean **0.000 ns**, with nothing left failing.
+Worst negative slack went from 90 ns in the red to a clean 0.000 ns, with nothing left failing.
 
 ---
 
@@ -95,16 +95,16 @@ Meets the 10 ns period / 100 MHz target with zero failing endpoints.
 
 ![FPGA Utilization](docs/utilization.png)
 
-The core logic comes in at roughly **13% of the device's LUTs** and **4% of its flip-flops** — plenty of headroom left on this part.
+The core logic comes in at roughly 13% of the device's LUTs and 4% of its flip-flops.
 
 ---
 
 ## Tools
 
-- **SystemVerilog** — RTL design and verification
-- **Verilator** — Functional simulation
-- **AMD Vivado** — Synthesis, implementation, timing analysis, utilization
-- **GTKWave** — Waveform debugging
+- SystemVerilog — RTL design and verification
+- Verilator — Functional simulation
+- AMD Vivado — Synthesis, implementation, timing analysis, utilization
+- GTKWave — Waveform debugging
 
 ---
 
