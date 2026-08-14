@@ -16,7 +16,7 @@ Three main pieces of RTL:
 Takes incoming order messages and decodes them into the control/data signals the order book actually needs.
 
 ### Order Book
-This is where the real logic lives — insertion, cancellation, matching, price priority, time priority, partial fills, and tracking the best bid/ask.
+This is responsible for insertion, cancellation, matching, price priority, time priority, partial fills, and tracking the best bid/ask.
 
 ### Trading Engine
 Wires the parser and order book together into one processing pipeline.
@@ -28,14 +28,14 @@ Wires the parser and order book together into one processing pipeline.
 Matching follows standard price-time priority: better prices go first, and if two orders sit at the same price, whichever arrived first wins.
 
 A BUY fills when:
-```text
+
 BUY price >= best SELL price
-```
+
 
 A SELL fills when:
-```text
+
 SELL price <= best BUY price
-```
+
 
 If the two matched orders don't have equal size, the engine fills what it can and keeps the leftover quantity live on the book.
 
@@ -113,11 +113,8 @@ The core logic comes in at roughly 13% of the device's LUTs and 4% of its flip-f
 
 ## Key Results
 
-- Built a synthesizable electronic trading engine in SystemVerilog, from scratch
-- Implemented a hardware order book with price-time-priority matching
-- Supports insertion, cancellation, matching, and partial fills
-- Wrote a full SystemVerilog testbench covering core trading behavior — all tests passing
-- Measured 20-cycle end-to-end latency in simulation
-- Chased down and closed timing in Vivado through several rounds of critical-path analysis
-- Closed timing at 100 MHz: **WNS = 0.000 ns**, 0 failing endpoints
-- Final footprint: **2,615 LUTs (12.57%)**, **1,834 flip-flops (4.41%)**
+-100 MHz post-implementation timing closure on Xilinx Artix-7
+-WNS improved from −79.331 ns to 0.000 ns
+-20-cycle (200 ns) deterministic end-to-end latency
+-2,615 LUTs (12.57%) and 1,834 flip-flops (4.41%)
+-All 7 functional tests passing
