@@ -1,6 +1,6 @@
 # FPGA Trading Engine
 
-A low-latency trading engine built in SystemVerilog, targeting a Xilinx Artix-7 FPGA. I wanted to understand what actually happens inside the hardware that HFT firms use to match orders in nanoseconds — so I built one myself, from message parsing all the way down to timing closure.
+A low-latency trading engine built in SystemVerilog, targeting a Xilinx Artix-7 FPGA. I wanted to understand what actually happens inside the hardware that HFT firms use to match orders in nanoseconds. So I built one myself, from message parsing all the way down to timing closure.
 
 Everything runs entirely in synthesizable RTL: order parsing, order-book management, price-time-priority matching, cancellations, partial fills, and trade generation.
 
@@ -113,8 +113,8 @@ The core logic comes in at roughly 13% of the device's LUTs and 4% of its flip-f
 
 ## Key Results
 
--100 MHz post-implementation timing closure on Xilinx Artix-7
--WNS improved from −79.331 ns to 0.000 ns
--20-cycle (200 ns) deterministic end-to-end latency
--2,615 LUTs (12.57%) and 1,834 flip-flops (4.41%)
--All 7 functional tests passing
+- 100 MHz post-implementation timing closure on Xilinx Artix-7
+- WNS improved from −79.331 ns to 0.000 ns
+- 20-cycle (200 ns) deterministic end-to-end latency
+- 2,615 LUTs (12.57%) and 1,834 flip-flops (4.41%)
+- All 7 functional tests passing
