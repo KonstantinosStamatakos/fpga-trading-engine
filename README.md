@@ -63,19 +63,22 @@ End-to-end latency measured in the testbench: **20 clock cycles**.
 
 ## Timing Optimization
 
-Once the logic worked, I moved into Vivado with a 100 MHz target (10 ns period), but the first pass didn't meet timing. The reports pointed to the order-book selection logic as the bottleneck — the comparison and priority chains formed long combinational paths with heavy loaded signals which was the main thing holding the design back.
+Once the logic worked, I moved into Vivado with a 100 MHz target (10 ns period), but the first constrained implementation came back with **−79.331 ns WNS**. The worst path ran through the order-selection logic, where the original linear search created a long chain of dependent comparisons.
 
-From there it was a lot of back-and-forth:
+The biggest change was replacing that linear search with a balanced **16 → 8 → 4 → 2 → 1 comparator tree**. That helped a lot, but it still wasn't enough to close timing, so I kept working through the critical paths and adding pipeline boundaries where the combinational logic was still too deep.
 
-- Pulling the worst setup paths out of Vivado's timing reports
-- Tracing through combinational depth and high-fanout nets
-- Reworking the order-selection logic to break up those long paths
-- Pushing more of the logic behind registers to shorten combinational stretches
-- Re-synthesizing and re-implementing after every RTL change
-- Trying different Vivado implementation strategies to see what placement/routing helped
-- Repeating all of the above until the numbers actually closed
+I also ended up registering both the selected order index and the order itself between stages. This kept later matching logic from going back through the live order book and helped break up some of the remaining paths.
 
-Worst negative slack went from 90 ns in the red to a clean 0.000 ns, with nothing left failing.
+After each change, I re-ran synthesis and implementation and checked the new worst paths. Near the end I also used Vivado's `Performance_Explore` strategy and physical optimization to squeeze out the remaining timing violations.
+
+The progression looked like this:
+
+**−79.331 ns → −65.617 ns → −17.883 ns → −5.170 ns → −0.586 ns → −0.446 ns → 0.000 ns**
+
+The final implementation meets the original **100 MHz** target with **0 failing setup endpoints**.
+
+End-to-end latency after pipelining: **20 clock cycles (200 ns)**.
+
 
 ---
 
